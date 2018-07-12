@@ -82,7 +82,7 @@ using utility::conversions::details::to_string;
 using std::to_string;
 #endif
 
-#define CRLF std::string("\r\n")
+#define CRLF "\r\n"
 
 namespace web { namespace http
 {
@@ -485,7 +485,7 @@ public:
             std::ostream request_stream(&m_request);
             request_stream.imbue(std::locale::classic());
 
-            request_stream << "CONNECT " << host << ":" << ((port != 0) ? port : 443) << " HTTP/1.1" << CRLF;
+            request_stream << "CONNECT " << host << ":" << ((port != 0) ? port : 443) << " HTTP/1.1\r\n";
             request_stream << "Host: " << host << ":" << ((port != 0) ? port : 443) << CRLF;
             request_stream << "Proxy-Connection: Keep-Alive" << CRLF;
 
@@ -548,7 +548,7 @@ public:
             if (!err)
             {
                 m_context->m_timer.reset();
-                m_context->m_connection->async_read_until(m_response, CRLF + CRLF, boost::bind(&ssl_proxy_tunnel::handle_status_line, shared_from_this(), boost::asio::placeholders::error));
+                m_context->m_connection->async_read_until(m_response, "\r\n\r\n", boost::bind(&ssl_proxy_tunnel::handle_status_line, shared_from_this(), boost::asio::placeholders::error));
             }
             else
             {
@@ -718,7 +718,13 @@ public:
                 extra_headers.append(ctx->generate_basic_auth_header());
             }
 
+#if defined(_WIN32)
+            utility::string_t accept_encoding_header;
+            ctx->add_accept_encoding_header(accept_encoding_header);
+            extra_headers += utility::conversions::to_utf8string(accept_encoding_header);
+#else
             ctx->add_accept_encoding_header(extra_headers);
+#endif
 
             // Check user specified transfer-encoding.
             std::string transferencoding;
@@ -1136,7 +1142,7 @@ private:
             }
 
             // Read until the end of entire headers
-            m_connection->async_read_until(m_body_buf, CRLF + CRLF, boost::bind(&asio_context::handle_status_line, shared_from_this(), boost::asio::placeholders::error));
+            m_connection->async_read_until(m_body_buf, "\r\n\r\n", boost::bind(&asio_context::handle_status_line, shared_from_this(), boost::asio::placeholders::error));
         }
         else
         {
@@ -1325,7 +1331,7 @@ private:
             }
             else
             {
-                async_read_until_buffersize(octets + CRLF.size(), // + 2 for crlf
+                async_read_until_buffersize(octets + 2, // + 2 for crlf
                                             boost::bind(&asio_context::handle_chunk, shared_from_this(), boost::asio::placeholders::error, octets));
             }
         }
@@ -1358,7 +1364,7 @@ private:
 
             if (to_read == 0)
             {
-                m_body_buf.consume(CRLF.size());
+                m_body_buf.consume(2); // CRLF
                 complete_request(m_downloaded);
             }
             else
@@ -1378,7 +1384,7 @@ private:
                     // It is valid for the decompressor to sometimes return an empty output for a given chunk, the data will be flushed when the next chunk is received
                     if (decompressed.empty())
                     {
-                        m_body_buf.consume(to_read + CRLF.size()); // consume crlf
+                        m_body_buf.consume(to_read + 2); // +2 to consume crlf
                         m_connection->async_read_until(m_body_buf, CRLF, boost::bind(&asio_context::handle_chunk_header, this_request, boost::asio::placeholders::error));
                     }
                     else
@@ -1394,7 +1400,7 @@ private:
                             try
                             {
                                 op.get();
-                                this_request->m_body_buf.consume(to_read + CRLF.size()); // consume crlf
+                                this_request->m_body_buf.consume(to_read + 2); // +2 to consume crlf
                                 this_request->m_connection->async_read_until(this_request->m_body_buf, CRLF, boost::bind(&asio_context::handle_chunk_header, this_request, boost::asio::placeholders::error));
                             }
                             catch (...)
@@ -1418,7 +1424,7 @@ private:
                             this_request->report_exception(std::current_exception());
                             return;
                         }
-                        this_request->m_body_buf.consume(to_read + CRLF.size()); // consume crlf
+                        this_request->m_body_buf.consume(to_read + 2); // +2 to consume crlf
                         this_request->m_connection->async_read_until(this_request->m_body_buf, CRLF, boost::bind(&asio_context::handle_chunk_header, this_request, boost::asio::placeholders::error));
                     }); 
                 }
