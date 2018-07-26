@@ -47,6 +47,8 @@
 #include <unordered_set>
 #include <memory>
 
+#define POCO_UNUSED(arg) (void)arg;
+
 #if defined(__GNUC__)
 
 #if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
@@ -653,6 +655,7 @@ public:
         
         auto start_http_request_flow = [proxy_type, proxy_host, proxy_port AND_CAPTURE_MEMBER_FUNCTION_POINTERS](std::shared_ptr<asio_context> ctx)
         {
+            POCO_UNUSED(this);
             if (ctx->m_request._cancellation_token().is_canceled())
             {
                 ctx->request_context::report_error(make_error_code(std::errc::operation_canceled).value(), "Request canceled by user.");
@@ -1043,6 +1046,7 @@ private:
         const auto this_request = shared_from_this();
         readbuf.getn(buf + http::details::chunked_encoding::data_offset, chunkSize).then([this_request, buf, chunkSize AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op)
         {
+            POCO_UNUSED(this);
             size_t readSize = 0;
             try
             {
@@ -1100,6 +1104,7 @@ private:
         auto readbuf = _get_readbuffer();
         readbuf.getn(boost::asio::buffer_cast<uint8_t *>(m_body_buf.prepare(readSize)), readSize).then([this_request AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op)
         {
+            POCO_UNUSED(this);
             try
             {
                 const auto actualReadSize = op.get();
@@ -1403,6 +1408,7 @@ private:
                         writeBuffer.putn_nocopy(shared_decompressed->data(), shared_decompressed->size())
                             .then([this_request, to_read, shared_decompressed AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op)
                         {
+                            POCO_UNUSED(this);
                             try
                             {
                                 op.get();
@@ -1421,6 +1427,7 @@ private:
                 {
                     writeBuffer.putn_nocopy(boost::asio::buffer_cast<const uint8_t *>(m_body_buf.data()), to_read).then([this_request, to_read AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op)
                     {
+                        POCO_UNUSED(this);
                         try
                         {
                             op.wait();
@@ -1518,6 +1525,7 @@ private:
                     writeBuffer.putn_nocopy(shared_decompressed->data(), shared_decompressed->size())
                         .then([this_request, read_size, shared_decompressed AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op)
                     {
+                        POCO_UNUSED(this);
                         size_t writtenSize = 0;
                         try
                         {
@@ -1540,6 +1548,7 @@ private:
                 writeBuffer.putn_nocopy(boost::asio::buffer_cast<const uint8_t *>(m_body_buf.data()), read_size)
                 .then([this_request AND_CAPTURE_MEMBER_FUNCTION_POINTERS](pplx::task<size_t> op)
                 {
+                    POCO_UNUSED(this);
                     size_t writtenSize = 0;
                     try
                     {
@@ -1591,6 +1600,7 @@ private:
             auto ctx = m_ctx;
             m_timer.async_wait([ctx AND_CAPTURE_MEMBER_FUNCTION_POINTERS](const boost::system::error_code& ec)
                                {
+                                   POCO_UNUSED(this);
                                    handle_timeout(ec, ctx);
                                });
         }
@@ -1606,6 +1616,7 @@ private:
                 auto ctx = m_ctx;
                 m_timer.async_wait([ctx AND_CAPTURE_MEMBER_FUNCTION_POINTERS](const boost::system::error_code& ec)
                 {
+                    POCO_UNUSED(this);
                     handle_timeout(ec, ctx);
                 });
             }
